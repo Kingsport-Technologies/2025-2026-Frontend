@@ -1,0 +1,17 @@
+<head>
+<title>Robot Controler</title>
+</head>
+<body>
+    <h1>Robot Controler</h1>
+    {%if connected %}
+        <p>Connected to {{ip}}</p>
+        <a href="/pilot"><button>Pilot</button></a>
+        <a href="/copilot"><button>Copilot</button></a>
+        <a href="/disconnect"><button>Disconnect</button></a>
+    {% else %}
+        <form action="/connect" method="post">
+        <input type="text" name="robot-ip" id="robot-ip" placeholder="Enter Robot IP">
+        <input type="submit" value="Connect">
+        </form>
+    {% endif %}
+</body>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>WebRTC Camera Receiver</title>
+  <style>body{font-family:sans-serif;padding:1rem}video{border:1px solid #ccc}</style>
+</head>
+<body>
+  <h1>WebRTC Camera Receiver</h1>
+  <video id="video" autoplay playsinline width="640" height="480"></video>
+  <div style="margin-top:1rem">
+    <button id="start">Start</button>
+    <span id="status"></span>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById('start');
+    const status = document.getElementById('status');
+
+    async function start() {
+      status.textContent = 'Starting...';
+      const pc = new RTCPeerConnection();
+
+      pc.ontrack = (event) => {
+        const el = document.getElementById('video');
+        el.srcObject = event.streams[0];
+        status.textContent = 'Connected';
+      };
+
+      // Indicate we want to receive video
+      pc.addTransceiver('video', { direction: 'recvonly' });
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      const resp = await fetch('/offer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sdp: offer.sdp, type: offer.type })
+      });
+
+      const answer = await resp.json();
+      await pc.setRemoteDescription(answer);
+    }
+
+    startBtn.addEventListener('click', start);
+  </script>
+</body>
+</html>
