@@ -20,6 +20,7 @@ from aiohttp import web
 import cv2
 import av
 from aiortc import RTCPeerConnection, RTCSessionDescription, VideoStreamTrack
+import aiohttp_cors
 
 logging.basicConfig(level=logging.INFO)
 pcs = set()
@@ -93,5 +94,16 @@ if __name__ == '__main__':
     app = web.Application()
     app.add_routes([web.get('/', index), web.post('/offer', offer)])
     app.on_shutdown.append(on_shutdown)
+    cors = aiohttp_cors.setup(app, defaults={
+        "*": aiohttp_cors.ResourceOptions(
+            allow_credentials=True,
+            expose_headers="*",
+            allow_headers="*",
+            allow_methods="*",
+        )
+    })
 
-    web.run_app(app, host='0.0.0.0', port=8080)
+    # Apply the CORS configuration to all routes
+    for route in list(app.router.routes()):
+        cors.add(route)
+    web.run_app(app, host='0.0.0.0', port=8081)

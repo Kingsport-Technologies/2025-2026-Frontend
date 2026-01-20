@@ -1,9 +1,107 @@
 <head>
     <title>Pilot of {{ ip }}</title>
+    <script>
+        var controller = false;
+        let socket = null;
+        window.addEventListener("gamepadconnected", (event) => {
+            console.log("Gamepad connected at index %d: %s. %d buttons, %d axes.",
+                event.gamepad.index, event.gamepad.id,
+                event.gamepad.buttons.length, event.gamepad.axes.length);
+            controller = true;
+        });
+
+        window.addEventListener("gamepaddisconnected", (event) => {
+            console.log("Gamepad disconnected from index %d: %s",
+                event.gamepad.index, event.gamepad.id);
+            controller = false;
+        });
+        function readGamepad() {
+            const pads = navigator.getGamepads();
+            const gp = pads[0]; // first controller
+
+            if (!gp) return null;
+
+            return {
+                id: gp.id,
+                index: gp.index,
+                timestamp: gp.timestamp,
+
+                axes: gp.axes, // array of floats [-1..1]
+
+                buttons: gp.buttons.map(b => ({
+                    pressed: b.pressed,
+                    touched: b.touched,
+                    value: b.value // 0..1 (triggers)
+                }))
+            };
+        }
+
+        function startsend() {
+            const socket = new WebSocket("ws://{{ ip }}:9002");
+            let previousdata = {};
+            socket.onopen = () => {
+                console.log("WebSocket connected");
+
+                setInterval(() => {
+                    if (controller && socket.readyState === WebSocket.OPEN) {
+                        const data = {
+                            time: Date.now(),
+                            gamepad: readGamepad()
+                        };
+                        if (data.gamepad != previousdata.gamepad)
+                        {
+                            socket.send(JSON.stringify(data));
+                            console.log("Sent:", data);
+                        }
+                        previousdata = data;
+                    }
+                }, 50);
+            };
+
+            socket.onerror = (e) => console.error("WebSocket error", e);
+            socket.onclose = () => console.log("WebSocket closed");
+        }
+        startsend()
+    </script>
 </head>
 <body>
-    <p>Hello Pilot</p>
-    <p>{{ip}}</p>
-    <p>Connected to {{ip}}</p>
-    <img src="http://{{ ip }}:5000/video_feed" width="640" height="480">
+  <video id="video" autoplay playsinline width="640" height="480"></video>
+  <div style="margin-top:1rem">
+    <button id="start">Start</button>
+    <span id="status"></span>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById('start');
+    const status = document.getElementById('status');
+
+    async function start() {
+      status.textContent = 'Starting...';
+      const pc = new RTCPeerConnection();
+
+      pc.ontrack = (event) => {
+        const el = document.getElementById('video');
+        el.srcObject = event.streams[0];
+        status.textContent = 'Connected';
+      };
+
+      // Indicate we want to receive video
+      pc.addTransceiver('video', { direction: 'recvonly' });
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      const resp = await fetch('http://{{ ip }}:8081/offer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sdp: offer.sdp, type: offer.type })
+      });
+
+      const answer = await resp.json();
+      await pc.setRemoteDescription(answer);
+    }
+
+    startBtn.addEventListener('click', start);
+
+  </script>
 </body>
