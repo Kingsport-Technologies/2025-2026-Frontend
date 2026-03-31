@@ -59,6 +59,7 @@
           event.gamepad.axes.length,
         );
         controller = true;
+        document.getElementById("control_icon").style.color = "green";
       });
 
       window.addEventListener("gamepaddisconnected", (event) => {
