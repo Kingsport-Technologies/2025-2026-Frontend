@@ -3,7 +3,7 @@
   <head>
     <link
       rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+      href="//use.fontawesome.com/releases/v7.2.0/css/all.css"
     />
     <style>
       html,
@@ -158,12 +158,12 @@
         /> -->
       </div>
       <div class="status_bar">
-        <span style="float: right">Connected to Robot at: {ip}</span>
+        <span style="float: right">Connected to Robot at: {{ip}}</span>
         <span></span>
         <div style="display: flex">
           <span style="float: left">Ping: xx, Robot Ping: yy</span>
           <i style="float: right" class="fa fa-gamepad" id="control_icon"></i>
-          <i id="robot_icon" class="fa-solid fa-robot"></i>
+          <i style="float: right" id="robot_icon" class="fa fa-robot"></i>
         </div>
       </div>
       <div class="startup">
