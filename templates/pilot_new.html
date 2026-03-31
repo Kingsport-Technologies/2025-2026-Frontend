@@ -1,0 +1,163 @@
+<!doctype html>
+<html>
+  <head>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"
+    />
+    <style>
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background-color: blue;
+      }
+
+      .container {
+        display: grid;
+        /* Creates three rows, each taking up an equal fraction of the available space */
+        grid-template-rows: 0.25fr 1fr 1fr;
+        height: 100vh; /* Makes the container the full height of the viewport */
+        width: 100vw;
+      }
+      .video_stream {
+        width: 49vw;
+      }
+      .video_streams {
+        /* Places the div in the second grid row */
+        grid-row: 2;
+
+        margin: auto; /* Centers horizontally within its grid cell */
+        width: 100%; /* Example width */
+        text-align: center;
+      }
+      .status_bar {
+        grid-row: 1;
+        display: flex;
+        justify-content: space-between;
+        text-align: left;
+        background-color: black;
+        height: 20px;
+        color: white;
+      }
+      #control_icon {
+        color: red;
+      }
+      .startup {
+        grid-row: 3;
+      }
+    </style>
+    <script>
+      var controller = false;
+      let socket = null;
+      window.addEventListener("gamepadconnected", (event) => {
+        console.log(
+          "Gamepad connected at index %d: %s. %d buttons, %d axes.",
+          event.gamepad.index,
+          event.gamepad.id,
+          event.gamepad.buttons.length,
+          event.gamepad.axes.length,
+        );
+        controller = true;
+      });
+
+      window.addEventListener("gamepaddisconnected", (event) => {
+        console.log(
+          "Gamepad disconnected from index %d: %s",
+          event.gamepad.index,
+          event.gamepad.id,
+        );
+        controller = false;
+      });
+      function readGamepad() {
+        const pads = navigator.getGamepads();
+        const gp = pads[0]; // first controller
+
+        if (!gp) return null;
+
+        return {
+          id: gp.id,
+          index: gp.index,
+          timestamp: gp.timestamp,
+
+          axes: gp.axes, // array of floats [-1..1]
+
+          buttons: gp.buttons.map((b) => ({
+            pressed: b.pressed,
+            touched: b.touched,
+            value: b.value, // 0..1 (triggers)
+          })),
+        };
+      }
+
+      function startsend() {
+        const socket = new WebSocket("ws://{{ ip }}:9002");
+        let previousdata = {};
+        socket.onopen = () => {
+          console.log("WebSocket connected");
+
+          setInterval(() => {
+            if (controller && socket.readyState === WebSocket.OPEN) {
+              const data = {
+                time: Date.now(),
+                gamepad: readGamepad(),
+              };
+              if (data.gamepad != previousdata.gamepad) {
+                socket.send(JSON.stringify(data));
+                console.log("Sent:", data);
+              }
+              previousdata = data;
+            }
+          }, 50);
+        };
+
+        socket.onerror = (e) => console.error("WebSocket error", e);
+        socket.onclose = () => console.log("WebSocket closed");
+      }
+      startsend();
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="video_streams">
+        <video
+          class="video_stream"
+          id="vs1"
+          autoplay
+          playsinline
+          width="640"
+          height="480"
+        ></video>
+        <video
+          class="video_stream"
+          id="vs2"
+          autoplay
+          playsinline
+          width="640"
+          height="480"
+        ></video>
+        <!-- <img class = "video_stream"  id = "vs1" src = "https://media.istockphoto.com/id/816752606/photo/tv-test-card-or-test-pattern-generic.jpg?s=1024x1024&w=is&k=20&c=8w3G2JwsCMtMzxkrMyM7EWf6gv9Hpb9dLFGZUntC_DA="> -->
+        <!-- <img
+          class="video_stream"
+          id="vs2"
+          src="https://media.istockphoto.com/id/816752606/photo/tv-test-card-or-test-pattern-generic.jpg?s=1024x1024&w=is&k=20&c=8w3G2JwsCMtMzxkrMyM7EWf6gv9Hpb9dLFGZUntC_DA="
+        /> -->
+      </div>
+      <div class="status_bar">
+        <span style="float: right">Connected to Robot at: {ip}</span>
+        <span></span>
+        <div style="display: flex">
+          <span style="float: left"
+            >Ping: xx, Robot Ping: yy, Controller Status:
+            <i style="float: right" class="fa fa-gamepad" id="control_icon"></i
+          ></span>
+        </div>
+      </div>
+      <div class="startup">
+        <button id="stream1">Start Stream 1</button>
+        <button id="stream2">Start Stream 2</button>
+        <button id="connect">Connect to Command Center</button>
+      </div>
+    </div>
+  </body>
+</html>
