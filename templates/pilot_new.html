@@ -43,6 +43,9 @@
       #control_icon {
         color: red;
       }
+      #robot_icon {
+        color: red;
+      }
       .startup {
         grid-row: 3;
       }
@@ -69,6 +72,7 @@
           event.gamepad.id,
         );
         controller = false;
+        document.getElementById("control_icon").style.color = "red";
       });
       function readGamepad() {
         const pads = navigator.getGamepads();
@@ -96,7 +100,8 @@
         let previousdata = {};
         socket.onopen = () => {
           console.log("WebSocket connected");
-
+          document.getElementById("robot_icon").style.color = "green";
+          document.getElementById("connect").disabled = "true";
           setInterval(() => {
             if (controller && socket.readyState === WebSocket.OPEN) {
               const data = {
@@ -112,8 +117,16 @@
           }, 50);
         };
 
-        socket.onerror = (e) => console.error("WebSocket error", e);
-        socket.onclose = () => console.log("WebSocket closed");
+        socket.onerror = (e) => {
+          console.error("WebSocket error", e);
+          document.getElementById("robot_icon").style.color = "red";
+          document.getElementById("connect").disabled = "false";
+        };
+        socket.onclose = () => {
+          console.log("WebSocket closed");
+          document.getElementById("robot_icon").style.color = "red";
+          document.getElementById("connect").disabled = "false";
+        };
       }
       startsend();
     </script>
@@ -148,16 +161,15 @@
         <span style="float: right">Connected to Robot at: {ip}</span>
         <span></span>
         <div style="display: flex">
-          <span style="float: left"
-            >Ping: xx, Robot Ping: yy, Controller Status:
-            <i style="float: right" class="fa fa-gamepad" id="control_icon"></i
-          ></span>
+          <span style="float: left">Ping: xx, Robot Ping: yy</span>
+          <i style="float: right" class="fa fa-gamepad" id="control_icon"></i>
+          <i id="robot_icon" class="fa-solid fa-robot"></i>
         </div>
       </div>
       <div class="startup">
         <button id="stream1">Start Stream 1</button>
         <button id="stream2">Start Stream 2</button>
-        <button id="connect">Connect to Command Center</button>
+        <button id="connect" disabled="false">Connect to Command Center</button>
       </div>
     </div>
   </body>

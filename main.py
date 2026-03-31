@@ -10,7 +10,7 @@ def home():
     return render_template('index.html', connected=connected, ip=robot_ip)
 @app.route('/pilot')
 def pilot():
-    return render_template('pilot.html', connected=connected, ip=robot_ip)
+    return render_template('pilot_new.html', connected=connected, ip=robot_ip)
 
 @app.route('/connect', methods=['POST'])
 def connect():
