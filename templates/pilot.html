@@ -3,6 +3,7 @@
     <script>
         var controller = false;
         let socket = null;
+        let time = 0;
         window.addEventListener("gamepadconnected", (event) => {
             console.log("Gamepad connected at index %d: %s. %d buttons, %d axes.",
                 event.gamepad.index, event.gamepad.id,
@@ -39,12 +40,19 @@
         function startsend() {
             const socket = new WebSocket("ws://{{ ip }}:9002");
             let previousdata = {};
+            socket.addEventListener("message", (event) => {
+                if(event.data = "Ping")
+                {
+                    time = 0;
+                }
+            });
             socket.onopen = () => {
                 console.log("WebSocket connected");
-
+                let iterations = 0;
                 setInterval(() => {
                     if (controller && socket.readyState === WebSocket.OPEN) {
                         const data = {
+                            type: "command",
                             time: Date.now(),
                             gamepad: readGamepad()
                         };
@@ -55,6 +63,18 @@
                         }
                         previousdata = data;
                     }
+                    if (socket.readyState === WebSocket.OPEN && iterations++ > 10)
+                    {
+                        iterations = 0;
+                        const data = {
+                            type: "ping",
+                            time: Date.now(),
+                        };
+                        socket.send(JSON.stringify(data));
+                        console.log("Sent:", data);
+                    }
+                    time += 50;
+                    document.getElementById("time").textContent = "Time from last ping" + time;
                 }, 50);
             };
 
@@ -70,7 +90,9 @@
     <button id="start">Start</button>
     <span id="status"></span>
   </div>
-
+  <div>
+    <p id="time"></p>
+  </div>
   <script>
     const startBtn = document.getElementById('start');
     const status = document.getElementById('status');
